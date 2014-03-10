@@ -28,6 +28,8 @@ import com.google.android.gms.plus.Plus;
 import com.google.android.gms.plus.model.people.Person;
 import com.google.android.gms.plus.model.people.PersonBuffer;
 
+
+
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.PendingIntent;
@@ -54,7 +56,7 @@ import java.util.ArrayList;
  */
 public class MainActivity extends FragmentActivity implements
     ConnectionCallbacks, OnConnectionFailedListener,
-    ResultCallback<People.LoadPeopleResult>, View.OnClickListener {
+     View.OnClickListener {
 
   private static final String TAG = "Konnect";
 
@@ -65,7 +67,7 @@ public class MainActivity extends FragmentActivity implements
   private static final int RC_SIGN_IN = 0;
 
   private static final int DIALOG_PLAY_SERVICES_ERROR = 0;
-
+  private boolean mIntentInProgress;
   private static final String SAVED_PROGRESS = "sign_in_progress";
   
   // GoogleApiClient wraps our service connection to Google Play services and
@@ -96,14 +98,11 @@ public class MainActivity extends FragmentActivity implements
   // Used to store the error code most recently returned by Google Play services
   // until the user clicks 'sign in'.
   private int mSignInError;
-  
+  private boolean mSignInClicked;
   private SignInButton mSignInButton;
   private Button mSignOutButton;
-  private Button mRevokeButton;
   private TextView mStatus;
-  private ListView mCirclesListView;
-  private ArrayAdapter<String> mCirclesAdapter;
-  private ArrayList<String> mCirclesList;
+  
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -111,17 +110,18 @@ public class MainActivity extends FragmentActivity implements
     setContentView(R.layout.activity_main);
 
     mSignInButton = (SignInButton) findViewById(R.id.sign_in_button);
-    
-    
-    mSignInButton.setOnClickListener(this);
+    mSignOutButton = (Button) findViewById(R.id.sign_out_button);
    
+    //Toast.makeText(this, "I am trying", Toast.LENGTH_LONG).show();
+    mSignInButton.setOnClickListener(this);
+    mSignOutButton.setOnClickListener(this);
     
     if (savedInstanceState != null) {
       mSignInProgress = savedInstanceState
           .getInt(SAVED_PROGRESS, STATE_DEFAULT);
     }
-    
     mGoogleApiClient = buildGoogleApiClient();
+   
   }
   
   private GoogleApiClient buildGoogleApiClient() {
@@ -139,7 +139,9 @@ public class MainActivity extends FragmentActivity implements
   @Override
   protected void onStart() {
     super.onStart();
+ //   Toast.makeText(this, "I am double trying", Toast.LENGTH_LONG).show();
     mGoogleApiClient.connect();
+    Toast.makeText(this, "client connected", Toast.LENGTH_LONG).show();
   }
 
   @Override
@@ -159,15 +161,28 @@ public class MainActivity extends FragmentActivity implements
 
   @Override
   public void onClick(View v) {
-	  Toast.makeText(this, "1111", Toast.LENGTH_LONG).show();
-   // if (!mGoogleApiClient.isConnecting()) {
-      // We only process button clicks when GoogleApiClient is not transitioning
-      // between connected and not connected.
-     
-          //  mStatus.setText(R.string.status_signing_in);
-            resolveSignInError();
-           
-    //}
+	  
+	// Toast.makeText(this, "abc", Toast.LENGTH_LONG).show();
+	
+	  if ( !mGoogleApiClient.isConnecting()) {
+			  
+	  switch (v.getId()) {
+      case R.id.sign_in_button:
+    	  mSignInClicked = true;
+       
+        resolveSignInError();
+        break;
+      case R.id.sign_out_button:
+        // We clear the default account on sign out so that Google Play
+        // services will not return an onConnected callback without user
+        // interaction.
+        Plus.AccountApi.clearDefaultAccount(mGoogleApiClient);
+        mGoogleApiClient.disconnect();
+        mGoogleApiClient.connect();
+        break;
+	  }
+	  }
+	  
   }
   
   /* onConnected is called when our Activity successfully connects to Google
@@ -180,21 +195,20 @@ public class MainActivity extends FragmentActivity implements
   public void onConnected(Bundle connectionHint) {
     // Reaching onConnected means we consider the user signed in.
     Log.i(TAG, "onConnected");
-    
+ //   Toast.makeText(this, "User is connected!", Toast.LENGTH_LONG).show();
     // Update the user interface to reflect that the user is signed in.
     mSignInButton.setEnabled(false);
     mSignOutButton.setEnabled(true);
-    mRevokeButton.setEnabled(true);
     
     // Retrieve some profile information to personalize our app for the user.
-    Person currentUser = Plus.PeopleApi.getCurrentPerson(mGoogleApiClient);
-    
+    getProfileInformation();
+   // Toast.makeText(this, currentUser.getDisplayName(), Toast.LENGTH_LONG).show();
   //  mStatus.setText(String.format(
       //  getResources().getString(R.string.signed_in_as),
       //  currentUser.getDisplayName()));
 
-    Plus.PeopleApi.loadVisible(mGoogleApiClient, null)
-        .setResultCallback(this);
+   // Plus.PeopleApi.loadVisible(mGoogleApiClient, null)
+     //   .setResultCallback(this);
     
     // Indicate that the sign in process is complete.
     mSignInProgress = STATE_DEFAULT;
@@ -210,7 +224,7 @@ public class MainActivity extends FragmentActivity implements
     // be returned in onConnectionFailed.
     Log.i(TAG, "onConnectionFailed: ConnectionResult.getErrorCode() = "
         + result.getErrorCode());
-    
+   // Toast.makeText(this, "User", Toast.LENGTH_LONG).show();
     if (mSignInProgress != STATE_IN_PROGRESS) {
       // We do not have an intent in progress so we should store the latest
       // error resolution intent for use when the sign in button is clicked.
@@ -223,8 +237,9 @@ public class MainActivity extends FragmentActivity implements
         // or they click cancel.
         resolveSignInError();
       }
+     
     }
-    
+    onSignedOut();
     // In this sample we consider the user signed out whenever they do not have
     // a connection to Google Play services.
    // onSignedOut();
@@ -237,6 +252,7 @@ public class MainActivity extends FragmentActivity implements
    * setting to enable device networking, etc.
    */
   private void resolveSignInError() {
+	//  Toast.makeText(this, "resolve sign in err ", Toast.LENGTH_LONG).show();
     if (mSignInIntent != null) {
       // We have an intent which will allow our user to sign in or
       // resolve an error.  For example if the user needs to
@@ -257,6 +273,7 @@ public class MainActivity extends FragmentActivity implements
         // The intent was canceled before it was sent.  Attempt to connect to
         // get an updated ConnectionResult.
         mSignInProgress = STATE_SIGN_IN;
+        Toast.makeText(this, "reconnect", Toast.LENGTH_LONG).show();
         mGoogleApiClient.connect();
       }
     } else {
@@ -269,7 +286,7 @@ public class MainActivity extends FragmentActivity implements
   }
   
   @Override
-  protected void onActivityResult(int requestCode, int resultCode,
+  /* protected void onActivityResult(int requestCode, int resultCode,
       Intent data) {
     switch (requestCode) {
       case RC_SIGN_IN:
@@ -291,27 +308,27 @@ public class MainActivity extends FragmentActivity implements
         break;
     }
   }
-    
-  @Override
-  public void onResult(LoadPeopleResult peopleData) {
-    if (peopleData.getStatus().getStatusCode() == CommonStatusCodes.SUCCESS) {
-      mCirclesList.clear();
-      PersonBuffer personBuffer = peopleData.getPersonBuffer();
-      try {
-          int count = personBuffer.getCount();
-          for (int i = 0; i < count; i++) {
-              mCirclesList.add(personBuffer.get(i).getDisplayName());
-          }
-      } finally {
-          personBuffer.close();
-      }
+    */
+  protected void onActivityResult(int requestCode, int responseCode, Intent intent) {
+	  if (requestCode == RC_SIGN_IN) {
+	    if (responseCode != RESULT_OK) {
+	      mSignInClicked = false;
+	    }
 
-      mCirclesAdapter.notifyDataSetChanged();
-    } else {
-      Log.e(TAG, "Error requesting visible circles: " + peopleData.getStatus());
-    }
-  }
+	    mIntentInProgress = false;
 
+	    if (!mGoogleApiClient.isConnecting()) {
+	      mGoogleApiClient.connect();
+	    }
+	  }
+	}
+ 
+  private void onSignedOut() {
+	    // Update the UI to reflect that the user is signed out.
+	    mSignInButton.setEnabled(true);
+	    mSignOutButton.setEnabled(false);
+	    
+	  }
  
 
   @Override
@@ -320,6 +337,39 @@ public class MainActivity extends FragmentActivity implements
     // We call connect() to attempt to re-establish the connection or get a
     // ConnectionResult that we can attempt to resolve.
     mGoogleApiClient.connect();
+  }
+
+  /**
+   * Fetching user's information name, email, profile pic
+   * */
+  private void getProfileInformation() {
+      try {
+          if (Plus.PeopleApi.getCurrentPerson(mGoogleApiClient) != null) {
+        	  Toast.makeText(this, "inside getCurrentPerson", Toast.LENGTH_LONG).show();
+              Person currentPerson = Plus.PeopleApi
+                      .getCurrentPerson(mGoogleApiClient);
+              String personName = currentPerson.getDisplayName();
+              String personPhotoUrl = currentPerson.getImage().getUrl();
+              String personGooglePlusProfile = currentPerson.getUrl();
+              String email = Plus.AccountApi.getAccountName(mGoogleApiClient);
+   
+              Log.e(TAG, "Name: " + personName + ", plusProfile: "
+                      + personGooglePlusProfile + ", email: " + email
+                      + ", Image: " + personPhotoUrl);
+   
+             Toast.makeText(this, "Userme "+ personName, Toast.LENGTH_LONG).show();
+             Intent intent = new Intent(this, abc.class);
+             intent.putExtra("personName", personName);
+
+             this.startActivity(intent);
+   
+          } else {
+              Toast.makeText(getApplicationContext(),
+                      "Person information is null", Toast.LENGTH_LONG).show();
+          }
+      } catch (Exception e) {
+          e.printStackTrace();
+      }
   }
 
  

@@ -1,3 +1,5 @@
+
+
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -14,14 +16,22 @@
         android:layout_height="250dp"
         android:src="@drawable/images" />
 
-   
     <com.google.android.gms.common.SignInButton
-    android:id="@+id/sign_in_button"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" 
-     android:layout_alignLeft="@+id/imageView1"
-        android:layout_alignRight="@+id/imageView1"
+        android:id="@+id/sign_in_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_below="@+id/imageView1"
-        android:layout_marginTop="47dp"/>
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="42dp" >
+    </com.google.android.gms.common.SignInButton>
+
+    <Button
+        android:id="@+id/sign_out_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/imageView1"
+        android:layout_centerHorizontal="true"
+        android:enabled="true"
+        android:text="Sign Out" />
 
 </RelativeLayout>

@@ -9,6 +9,7 @@ package com.example.konnect_test;
 
 public final class Manifest {
     public static final class permission {
+        public static final String GET_ACCOUNTS="android.permission.GET_ACCOUNTS";
         public static final String INTERNET="android.permission.INTERNET";
     }
 }
